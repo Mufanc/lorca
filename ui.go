@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strings"
 )
 
 // UI interface allows talking to the HTML5 UI from Go.
@@ -61,6 +62,18 @@ var defaultChromeArgs = []string{
 // ui.Close(). You might want to use "--headless" custom CLI argument to test
 // your UI code.
 func New(url, dir string, width, height int, customArgs ...string) (UI, error) {
+	GetPrefix := func(str string) (bool, string) {
+		index := strings.Index(str, "=")
+		if index != -1 {
+			str = str[:index]
+		}
+		del := strings.HasPrefix(str, "@")
+		if del {
+			return true, str[1:]
+		}
+		return false, str
+	}
+
 	if url == "" {
 		url = "data:text/html,<html></html>"
 	}
@@ -75,8 +88,22 @@ func New(url, dir string, width, height int, customArgs ...string) (UI, error) {
 	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
 	args = append(args, fmt.Sprintf("--window-size=%d,%d", width, height))
-	args = append(args, customArgs...)
 	args = append(args, "--remote-debugging-port=0")
+begin:
+	for _, str := range customArgs {
+		del, prefix := GetPrefix(str)
+		for i, arg := range args {
+			if _, pre := GetPrefix(arg); pre == prefix {
+				if del {
+					args = append(args[:i], args[i+1:]...)
+				} else {
+					args[i] = str
+				}
+				continue begin
+			}
+		}
+		args = append(args, str)
+	}
 
 	chrome, err := newChromeWithArgs(ChromeExecutable(), args...)
 	done := make(chan struct{})
