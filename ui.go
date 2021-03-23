@@ -22,10 +22,9 @@ type UI interface {
 }
 
 type ui struct {
-	chrome  *chrome
-	done    chan struct{}
-	tmpDir  string
-	pointed bool // True if tmpdir is given by user
+	chrome *chrome
+	done   chan struct{}
+	tmpDir string
 }
 
 var defaultChromeArgs = []string{
@@ -79,14 +78,12 @@ func New(url, dir string, width, height int, customArgs ...string) (UI, error) {
 		url = "data:text/html,<html></html>"
 	}
 	tmpDir := ""
-	pointed := true
 	if dir == "" {
 		name, err := ioutil.TempDir("", "lorca")
 		if err != nil {
 			return nil, err
 		}
 		dir, tmpDir = name, name
-		pointed = false
 	}
 	args := append(defaultChromeArgs, fmt.Sprintf("--app=%s", url))
 	args = append(args, fmt.Sprintf("--user-data-dir=%s", dir))
@@ -119,7 +116,7 @@ begin:
 		chrome.cmd.Wait()
 		close(done)
 	}()
-	return &ui{chrome: chrome, done: done, tmpDir: tmpDir, pointed: pointed}, nil
+	return &ui{chrome: chrome, done: done, tmpDir: tmpDir}, nil
 }
 
 func (u *ui) Done() <-chan struct{} {
