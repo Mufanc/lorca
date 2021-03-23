@@ -123,9 +123,6 @@ begin:
 }
 
 func (u *ui) Done() <-chan struct{} {
-	if !u.pointed {
-		os.RemoveAll(u.tmpDir)
-	}
 	return u.done
 }
 
@@ -158,7 +155,7 @@ func (u *ui) Bind(name string, f interface{}) error {
 		if len(raw) != v.Type().NumIn() {
 			return nil, errors.New("function arguments mismatch")
 		}
-		args := []reflect.Value{}
+		args := make([]reflect.Value, 0)
 		for i := range raw {
 			arg := reflect.New(v.Type().In(i))
 			if err := json.Unmarshal(raw[i], arg.Interface()); err != nil {
@@ -207,4 +204,8 @@ func (u *ui) SetBounds(b Bounds) error {
 
 func (u *ui) Bounds() (Bounds, error) {
 	return u.chrome.bounds()
+}
+
+func (u *ui) Clear() {
+	os.RemoveAll(u.tmpDir)
 }
